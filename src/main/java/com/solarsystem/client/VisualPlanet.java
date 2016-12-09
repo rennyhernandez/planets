@@ -38,16 +38,14 @@ public class VisualPlanet {
   public static class Pane extends JPanel {
 
     public static final int SCALE_SIZE = 10;
-    public static final int TIME_DELAY = 1000;
+    public static final int TIME_DELAY = 400;
     private Ellipse2D ferenginar, betazed, vulcano;
     private Ellipse2D sun;
     private int day = 0;
-    private double less;
     PlanetService service;
     private Timer timer;
     public Pane() {
       service = new PlanetService();
-      less = 100000;
       System.out.printf("area(VULCANO, BETAZED, FERENGINAR) = %f\n", service.getArea());
       timer = new Timer(TIME_DELAY, new ActionListener() {
         public void actionPerformed(ActionEvent e) {
@@ -84,9 +82,6 @@ public class VisualPlanet {
 
     private void drawFromSunToBetazed(final Graphics g) {
       Graphics2D g2D = (Graphics2D) g;
-      if(service.areAlignedWithSun()){
-        g2D.setColor(Color.GREEN);
-      }
       g2D.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
           RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
       Line2D sunToBetazed = new Line2D.Double(
@@ -165,7 +160,6 @@ public class VisualPlanet {
     private void drawBetazed(final Graphics g) {
       Graphics2D g2d = (Graphics2D) g.create();
       g2d.setColor(Color.BLUE);
-
       g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
           RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
       double x1 = (getWidth() / 2) + (BETAZED.getPositionX() / 10);

@@ -23,7 +23,7 @@ public class PlanetServiceTest {
     int days = 0;
     double distance = FERENGINAR.getDistance();
     // when asking for position in day 0.
-    FERENGINAR.calculatePosition(0);
+    FERENGINAR.setPositionForDay(0);
     // then It should return position (distance,0).
     Assert.assertEquals(distance, FERENGINAR.getPositionX(), 1);
     Assert.assertEquals(0.0, FERENGINAR.getPositionY(), 1);
@@ -36,11 +36,13 @@ public class PlanetServiceTest {
     int dayAfterYear = 361;
     double xAtDayOne, yAtDayOne;
     double distance = FERENGINAR.getDistance();
+
     // When calculating the ferenginar position at day one
-    FERENGINAR.calculatePosition(dayOne);
+    FERENGINAR.setPositionForDay(dayOne);
     xAtDayOne = FERENGINAR.getPositionX();
     yAtDayOne = FERENGINAR.getPositionY();
-    FERENGINAR.calculatePosition(dayAfterYear);
+    FERENGINAR.setPositionForDay(dayAfterYear);
+
     // Then they should be the same
     Assert.assertEquals(xAtDayOne, FERENGINAR.getPositionX(), 1);
     Assert.assertEquals(yAtDayOne, FERENGINAR.getPositionY(), 1);
@@ -48,12 +50,14 @@ public class PlanetServiceTest {
 
   @Test
   public void areThePlanetsAligned() {
-    int day = 0;
-    while(!service.areAligned()){
+    int day = 1;
+    while(true){
       service.movePlanetsToDay(day);
+      if(service.areAligned()) {
+        System.out.printf("day %d\n", day);
+      }
       day++;
     }
-    System.out.printf("FERENGINAR: X = %f, Y = %f\n", FERENGINAR.getPositionX(), FERENGINAR.getPositionY());
   }
   @Test
   public void areAlignedWithSun(){

@@ -10,25 +10,42 @@ import static com.solarsystem.models.Planet.VULCANO;
  */
 public class PlanetService {
 
-  public static final int EPSILON = 90000;
+  /* Used when calculating alignment between planets*/
+  public static final double EPSILON = 1e+5;
+
+
+  /** Three colinear points must satisfy that (x1y2 - x2y1) + (x2y3 - x3y2) + (x3y1 - x1y3) = 0*/
+  public boolean areAligned(){
+    Point p1 = FERENGINAR.getPoint();
+    Point p2 = VULCANO.getPoint();
+    Point p3 = BETAZED.getPoint();
+    return getSlopeDiff(p1, p2, p3) < 1.5e+5;
+  }
+  /**
+   * Calculates the slope difference between three lines formed by three points
+   */
+  private double getSlopeDiff(final Point p1, final Point p2, final Point p3) {
+    double x1 = p1.getX();
+    double y1 = p1.getY();
+    double x2 = p2.getX();
+    double y2 = p2.getY();
+    double x3 = p3.getX();
+    double y3 = p3.getY();
+
+    return Math.abs((x1*y2 - x2*y1) + (x2*y3 - x3*y2) + (x3*y1 - x1*y3));
+  }
 
   /**
    * Returns true if the three planets are aligned. It calculates
    * the area of a triangle formed by the three planets with the formula written below
-   * and compares it to zero (no need to divide by 2):
-   * [ Ax * (By - Cy) + Bx * (Cy - Ay) + Cx * (Ay - By) ] = 0
+   * and compares it to zero:
+   * [ Ax * (By - Cy) + Bx * (Cy - Ay) + Cx * (Ay - By) ] / 2 = 0
    *
    */
-
-  public boolean areAligned(){
-    return getArea() < EPSILON;
-  }
-
   public double getArea() {
-    return Math.abs(0.5 * (FERENGINAR.getPositionX() * (VULCANO.getPositionY() - BETAZED.getPositionY())
-        + VULCANO.getPositionX() * (BETAZED.getPositionY() - FERENGINAR.getPositionY())
-        + BETAZED.getPositionX() * (FERENGINAR.getPositionY() - VULCANO.getPositionY())));
+    return getArea(FERENGINAR.getPoint(), VULCANO.getPoint(), BETAZED.getPoint());
   }
+
   public double getArea(Point a, Point b, Point c) {
     return Math.abs(0.5 * (a.getX() * (b.getY() - c.getY())
         + b.getX() * (c.getY() - a.getY())
@@ -36,20 +53,15 @@ public class PlanetService {
   }
 
   public boolean areAlignedWithSun(){
-    return getArea(new Point(0,0), FERENGINAR.getPoint(), VULCANO.getPoint()) < 175000 &&
-           getArea(new Point(0,0), FERENGINAR.getPoint(), BETAZED.getPoint()) < 175000 &&
-           getArea(new Point(0,0), VULCANO.getPoint(), BETAZED.getPoint()) < 175000;
+    return getSlopeDiff(new Point(0,0), FERENGINAR.getPoint(), VULCANO.getPoint()) < EPSILON &&
+           getSlopeDiff(new Point(0,0), FERENGINAR.getPoint(), BETAZED.getPoint()) < EPSILON &&
+           getSlopeDiff(new Point(0,0), VULCANO.getPoint(), BETAZED.getPoint()) < EPSILON;
   }
   public boolean areTriangled(){
     return pointZeroInTriangle(FERENGINAR, BETAZED, VULCANO);
   }
 
-  /**
-   *
-   * @param p1
-   * @param p2
-   * @return
-   */
+
   private double sign (Planet p1, Planet p2)
   {
     return -p2.getPositionX() * (p1.getPositionY() - p2.getPositionY()) - (p1.getPositionX() -
@@ -68,9 +80,9 @@ public class PlanetService {
   }
 
   public void movePlanetsToDay(final int day) {
-    FERENGINAR.calculatePosition(day);
-    BETAZED.calculatePosition(day);
-    VULCANO.calculatePosition(day);
+    FERENGINAR.setPositionForDay(day);
+    BETAZED.setPositionForDay(day);
+    VULCANO.setPositionForDay(day);
   }
 }
 

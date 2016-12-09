@@ -11,10 +11,10 @@ public enum Planet {
   VULCANO(1000, Rotation.COUNTER_CLOCKWISE, 5);
 
   private final int distance; // the radius of the circumference respect to the sun (0,0)
+
   private final Rotation rotation;
   private final double angularVelocity;
   private final Point point;
-
   Planet(final int distance,
                 final Rotation rotation,
                 final double angularVelocity) {
@@ -27,17 +27,22 @@ public enum Planet {
   public int getDistance() {
     return distance;
   }
+
+  public double getAngularVelocity() {
+    return angularVelocity;
+  }
   public double getPositionX(){return point.getX();}
   public double getPositionY(){return point.getY();}
   public Point getPoint(){return this.point;}
-  public void calculatePosition(final int day){
+
+  public void setPositionForDay(final double day){
     // we need to calculate how much degrees did the planet moved in a day
     if(rotation.equals(Rotation.CLOCKWISE)){
       point.setX(distance * Math.cos(Math.toRadians(day * angularVelocity)));
       point.setY(distance * Math.sin(Math.toRadians(day * angularVelocity)));
     } else {
-      point.setX(distance * Math.sin(Math.toRadians(day * angularVelocity)));
-      point.setY(distance * Math.cos(Math.toRadians(day * angularVelocity)));
+      point.setX(distance * Math.cos(Math.toRadians(360 - day * angularVelocity)));
+      point.setY(distance * Math.sin(Math.toRadians(360 - day * angularVelocity)));
     }
 
   }
