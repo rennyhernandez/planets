@@ -1,39 +1,33 @@
 package com.solarsystem.models;
 
 
-import static com.solarsystem.models.Planet.BETAZED;
-import static com.solarsystem.models.Planet.FERENGINAR;
-import static com.solarsystem.models.Planet.VULCANO;
+import com.solarsystem.utils.MathUtils;
+import org.springframework.stereotype.Service;
+
+import static com.solarsystem.models.Planet.*;
 
 /**
  * Created by renny on 30/11/16.
  */
+@Service
 public class PlanetService {
 
-  /* Used when calculating alignment between planets*/
-  public static final double EPSILON = 1e+5;
+  /*
+  * Used when calculating alignment between planets
+  * this is value was assigned after calculating minimal areas for
+  * every run when the planet are near to be collinear
+  */
+  public static final double EPSILON = 9e+4;
 
-
-  /** Three colinear points must satisfy that (x1y2 - x2y1) + (x2y3 - x3y2) + (x3y1 - x1y3) = 0*/
-  public boolean areAligned(){
-    Point p1 = FERENGINAR.getPoint();
-    Point p2 = VULCANO.getPoint();
-    Point p3 = BETAZED.getPoint();
-    return getSlopeDiff(p1, p2, p3) < 1.5e+5;
+  public double getArea() {
+    return getArea(FERENGINAR.getPoint(), VULCANO.getPoint(), BETAZED.getPoint());
   }
-  /**
-   * Calculates the slope difference between three lines formed by three points
-   */
-  private double getSlopeDiff(final Point p1, final Point p2, final Point p3) {
-    double x1 = p1.getX();
-    double y1 = p1.getY();
-    double x2 = p2.getX();
-    double y2 = p2.getY();
-    double x3 = p3.getX();
-    double y3 = p3.getY();
 
-    return Math.abs((x1*y2 - x2*y1) + (x2*y3 - x3*y2) + (x3*y1 - x1*y3));
+  public double getArea(Point a, Point b, Point c){
+    return getArea(a, b, c, true);
   }
+
+
 
   /**
    * Returns true if the three planets are aligned. It calculates
@@ -42,47 +36,101 @@ public class PlanetService {
    * [ Ax * (By - Cy) + Bx * (Cy - Ay) + Cx * (Ay - By) ] / 2 = 0
    *
    */
-  public double getArea() {
-    return getArea(FERENGINAR.getPoint(), VULCANO.getPoint(), BETAZED.getPoint());
-  }
+  public double getArea(Point a, Point b, Point c, boolean unsigned){
 
-  public double getArea(Point a, Point b, Point c) {
-    return Math.abs(0.5 * (a.getX() * (b.getY() - c.getY())
+    double area = 0.5 * (a.getX() * (b.getY() - c.getY())
         + b.getX() * (c.getY() - a.getY())
-        + c.getX() * (a.getY() - b.getY())));
+        + c.getX() * (a.getY() - b.getY()));
+
+    return unsigned ? Math.abs(area) : area;
   }
 
-  public boolean areAlignedWithSun(){
-    return getSlopeDiff(new Point(0,0), FERENGINAR.getPoint(), VULCANO.getPoint()) < EPSILON &&
-           getSlopeDiff(new Point(0,0), FERENGINAR.getPoint(), BETAZED.getPoint()) < EPSILON &&
-           getSlopeDiff(new Point(0,0), VULCANO.getPoint(), BETAZED.getPoint()) < EPSILON;
+  /**
+   * Three planets are considered aligned when the area of the forming triangle is
+   * between zero and an epsilon.
+   * */
+
+  public boolean areAligned(){
+    Point p1 = FERENGINAR.getPoint();
+    Point p2 = VULCANO.getPoint();
+    Point p3 = BETAZED.getPoint();
+    double area = getArea(p1, p2, p3);
+    return area < EPSILON;
+
   }
-  public boolean areTriangled(){
-    return pointZeroInTriangle(FERENGINAR, BETAZED, VULCANO);
+
+  public boolean arePlanetsAlignedWithSun(){
+    return getArea(new Point(0,0), FERENGINAR.getPoint(), VULCANO.getPoint()) < EPSILON &&
+           getArea(new Point(0,0), FERENGINAR.getPoint(), BETAZED.getPoint()) < EPSILON &&
+           getArea(new Point(0,0), VULCANO.getPoint(), BETAZED.getPoint()) < EPSILON;
+  }
+  public boolean sunInTriangle(){
+    return sunInTriangle(FERENGINAR, BETAZED, VULCANO);
   }
 
 
-  private double sign (Planet p1, Planet p2)
+  /**
+   *  Given three Planets p0, p1 and p2, calculate if the sun is inside their triangle formation using
+   *  barycentric coordinates according to http://stackoverflow.com/a/2049712/2744577
+   *  and returns whether if it is inside or not.
+   * @param p0 a given Point (x0,y0)
+   * @param p1 a given Point (x1,y1)
+   * @param p2 a given Point (x2,y2)
+   * @return true if the sun is inside the triangle, false if not.
+   */
+
+  public boolean sunInTriangle(Planet p0, Planet p1, Planet p2)
   {
-    return -p2.getPositionX() * (p1.getPositionY() - p2.getPositionY()) - (p1.getPositionX() -
-        p2.getPositionX()) * -p2.getPositionY();
+    double x0 = p0.getPositionX();
+    double y0 = p0.getPositionY();
+    double x1 = p1.getPositionX();
+    double y1 = p1.getPositionY();
+    double x2 = p2.getPositionX();
+    double y2 = p2.getPositionY();
+    double xs, ys;
+    xs = ys = 0.0;
+    double area = 0.5 * (-y1 * x2 + y0 * (-x1 + x2) + x0 * (y1 - y2) + x1 * y2);
+    int sign = area < 0 ? -1 : 1;
+    double s = (y0 * x2 - x0 * y2 + (y2 - y0) * xs + (x0 - x2) * ys) * sign;
+    double t = (x0 * y1 - y0 * x1 + (y0 - y1) * xs + (x1 - x0) * ys) * sign;
+
+    return s > 0 && t > 0 && (s + t) < 2 * area * sign;
   }
 
-  private boolean pointZeroInTriangle(Planet v1, Planet v2, Planet v3)
-  {
-    boolean b1, b2, b3;
-
-    b1 = sign(v1, v2) < 0.0d;
-    b2 = sign(v2, v3) < 0.0d;
-    b3 = sign(v3, v1) < 0.0d;
-
-    return ((b1 == b2) && (b2 == b3));
-  }
 
   public void movePlanetsToDay(final int day) {
     FERENGINAR.setPositionForDay(day);
     BETAZED.setPositionForDay(day);
     VULCANO.setPositionForDay(day);
+  }
+
+  public Weather forecast(final int day) {
+    movePlanetsToDay(day);
+    if(arePlanetsAlignedWithSun()){
+      return Weather.DROUGHT;
+    } else if(areAligned()){
+      return Weather.OPTIMAL;
+    } else if(sunInTriangle()){
+      return Weather.RAIN;
+    }
+    return Weather.NORMAL;
+  }
+
+  public double getMinimalDistance(final Point p1, final Point p2, final Point p3){
+    double p1p2 = p1.distance(p2);
+    double p1p3 = p1.distance(p3);
+    double p2p3 = p2.distance(p3);
+    return Math.min(Math.min(p1p2,p1p3),p2p3);
+  }
+
+  public double getPerimeter(){
+    return getPerimeter(FERENGINAR.getPoint(), VULCANO.getPoint(), BETAZED.getPoint());
+  }
+  public double getPerimeter(Point p1, Point p2, Point p3){
+    double p1p2 = p1.distance(p2);
+    double p1p3 = p1.distance(p3);
+    double p2p3 = p2.distance(p3);
+    return p1p2 + p1p3 + p2p3;
   }
 }
 

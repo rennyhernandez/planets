@@ -1,6 +1,9 @@
-package com.solarsystem.client;
+package com.solarsystem.utils;
 
+import com.solarsystem.models.Planet;
 import com.solarsystem.models.PlanetService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,6 +20,7 @@ import static com.solarsystem.models.Planet.*;
  * purposes.
  */
 public class VisualPlanet {
+  Logger logger = LoggerFactory.getLogger(VisualPlanet.class);
   public static void main(String[] args) {
     EventQueue.invokeLater(new Runnable() {
       public void run() {
@@ -36,30 +40,38 @@ public class VisualPlanet {
     });
   }
   public static class Pane extends JPanel {
-
+    Logger logger = LoggerFactory.getLogger(VisualPlanet.class);
     public static final int SCALE_SIZE = 10;
-    public static final int TIME_DELAY = 400;
+    public static final int TIME_DELAY = 500;
+    public static final int PLANET_SIZE = 10;
     private Ellipse2D ferenginar, betazed, vulcano;
-    private Ellipse2D sun;
+    private Ellipse2D orbit;
     private int day = 0;
     PlanetService service;
     private Timer timer;
     public Pane() {
       service = new PlanetService();
-      System.out.printf("area(VULCANO, BETAZED, FERENGINAR) = %f\n", service.getArea());
       timer = new Timer(TIME_DELAY, new ActionListener() {
         public void actionPerformed(ActionEvent e) {
-          service.movePlanetsToDay(++day);
-          System.out.printf("---- day %d ----\n", day);
-          System.out.printf("area(VULCANO, BETAZED, FERENGINAR) = %f\n", service.getArea());
-          if(service.areAlignedWithSun()){
-            System.out.println("Aligned at day " + day);
-          }
+          service.movePlanetsToDay(day);
+          logInfo();
+          day++;
           repaint();
         }
 
       });
       timer.start();
+    }
+
+    private void logInfo() {
+      logger.info("---- day {} ----", day);
+      logger.info("Angle for Ferenginar: {}º", FERENGINAR.getAngle());
+      logger.info("Angle for Vulcano: {}º", VULCANO.getAngle());
+      logger.info("Angle for Betazed: {}º", BETAZED.getAngle());
+      logger.info("The weather for this day is: {}", service.forecast(day).name());
+      logger.info("Area is: {}", service.getArea());
+      logger.info("Minimal distance is: {}", service.getMinimalDistance(FERENGINAR.getPoint(), VULCANO.getPoint(), BETAZED.getPoint()));
+      logger.info("---- End of day {} ----\n", day);
     }
 
     @Override
@@ -70,26 +82,35 @@ public class VisualPlanet {
     @Override
     protected void paintComponent(Graphics g) {
       super.paintComponent(g);
+      drawOrbits(g);
       drawFromFerenginarToBetazed(g);
       drawFromFerenginarToVulcano(g);
       drawDistanceFromBetazedToVulcano(g);
-      drawFromSunToBetazed(g);
       drawSun(g);
       drawFerenginar(g);
       drawBetazed(g);
       drawVulcano(g);
     }
+    private void drawOrbits(final Graphics g){
+      drawOrbit(g, FERENGINAR);
+      drawOrbit(g, VULCANO);
+      drawOrbit(g, BETAZED);
+    }
 
-    private void drawFromSunToBetazed(final Graphics g) {
-      Graphics2D g2D = (Graphics2D) g;
-      g2D.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+    private void drawOrbit(final Graphics g, Planet planet){
+      Graphics2D g2d = (Graphics2D) g.create();
+      g2d.setColor(Color.LIGHT_GRAY);
+      g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
           RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-      Line2D sunToBetazed = new Line2D.Double(
-          getCenterX(),
-          getCenterY(),
-          getCenterX() + scaleToTen(BETAZED.getPositionX()),
-          getCenterY() + scaleToTen(BETAZED.getPositionY()));
-      g2D.draw(sunToBetazed);
+      double x = (getWidth() / 2);
+      double y =  (getHeight() / 2);
+      double radius = scale(planet.getDistance());
+
+      orbit = new Ellipse2D.Double(
+          x - radius + PLANET_SIZE / 2,
+          y - radius + PLANET_SIZE / 2,
+          radius * 2, radius * 2);
+      g2d.draw(orbit);
     }
 
     private void drawDistanceFromBetazedToVulcano(final Graphics g) {
@@ -97,16 +118,19 @@ public class VisualPlanet {
       if(service.areAligned()){
         g2D.setColor(Color.RED);
       }
-      if(service.areAlignedWithSun()){
+      if(service.sunInTriangle()){
+        g2D.setColor(Color.ORANGE);
+      }
+      if(service.arePlanetsAlignedWithSun()){
         g2D.setColor(Color.GREEN);
       }
       g2D.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
           RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
       Line2D ferenginarToVulcano = new Line2D.Double(
-          getCenterX() + scaleToTen(BETAZED.getPositionX()),
-          getCenterY() + scaleToTen(BETAZED.getPositionY()),
-          getCenterX() + scaleToTen(VULCANO.getPositionX()),
-          getCenterY() + scaleToTen(VULCANO.getPositionY()));
+          getCenterX() + scale(BETAZED.getPositionX()),
+          getCenterY() + scale(BETAZED.getPositionY()),
+          getCenterX() + scale(VULCANO.getPositionX()),
+          getCenterY() + scale(VULCANO.getPositionY()));
       g2D.draw(ferenginarToVulcano);
     }
 
@@ -117,14 +141,17 @@ public class VisualPlanet {
       if(service.areAligned()){
         g2D.setColor(Color.RED);
       }
-      if(service.areAlignedWithSun()){
+      if(service.sunInTriangle()){
+        g2D.setColor(Color.ORANGE);
+      }
+      if(service.arePlanetsAlignedWithSun()){
         g2D.setColor(Color.GREEN);
       }
       Line2D ferenginarToVulcano = new Line2D.Double(
-          getCenterX() + scaleToTen(FERENGINAR.getPositionX()),
-          getCenterY() + scaleToTen(FERENGINAR.getPositionY()),
-          getCenterX() + scaleToTen(BETAZED.getPositionX()),
-          getCenterY() + scaleToTen(BETAZED.getPositionY()));
+          getCenterX() + scale(FERENGINAR.getPositionX()),
+          getCenterY() + scale(FERENGINAR.getPositionY()),
+          getCenterX() + scale(BETAZED.getPositionX()),
+          getCenterY() + scale(BETAZED.getPositionY()));
       g2D.draw(ferenginarToVulcano);
     }
     private void drawFromFerenginarToVulcano(final Graphics g) {
@@ -134,27 +161,31 @@ public class VisualPlanet {
       if(service.areAligned()){
         g2D.setColor(Color.RED);
       }
-      if(service.areAlignedWithSun()){
+      if(service.sunInTriangle()){
+        g2D.setColor(Color.ORANGE);
+      }
+      if(service.arePlanetsAlignedWithSun()){
         g2D.setColor(Color.GREEN);
       }
+
       Line2D ferenginarToVulcano = new Line2D.Double(
-          getCenterX() + scaleToTen(FERENGINAR.getPositionX()),
-          getCenterY() + scaleToTen(FERENGINAR.getPositionY()),
-          getCenterX() + scaleToTen(VULCANO.getPositionX()),
-          getCenterY() + scaleToTen(VULCANO.getPositionY()));
+          getCenterX() + scale(FERENGINAR.getPositionX()),
+          getCenterY() + scale(FERENGINAR.getPositionY()),
+          getCenterX() + scale(VULCANO.getPositionX()),
+          getCenterY() + scale(VULCANO.getPositionY()));
       g2D.draw(ferenginarToVulcano);
     }
-
-    private double scaleToTen(double x){
+    // Scaling values for rendering purposes (actual distances and values might not be rendered properly)
+    private double scale(double x){
       return x / SCALE_SIZE;
     }
 
     private int getCenterX(){
-      return getWidth() / 2  + 5;
+      return getWidth() / 2  + (PLANET_SIZE / 2);
     }
 
     private int getCenterY(){
-      return getWidth() / 2 + 5;
+      return getWidth() / 2 + (PLANET_SIZE / 2);
     }
 
     private void drawBetazed(final Graphics g) {
@@ -162,9 +193,9 @@ public class VisualPlanet {
       g2d.setColor(Color.BLUE);
       g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
           RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-      double x1 = (getWidth() / 2) + (BETAZED.getPositionX() / 10);
-      double y1 =  (getHeight() / 2) + (BETAZED.getPositionY() / 10);
-      betazed = new Ellipse2D.Double(x1, y1, 10, 10);
+      double x1 = (getWidth() / 2) + scale(BETAZED.getPositionX());
+      double y1 =  (getHeight() / 2) + scale(BETAZED.getPositionY());
+      betazed = new Ellipse2D.Double(x1, y1, PLANET_SIZE, PLANET_SIZE);
       g2d.fill(betazed);
     }
 
@@ -173,9 +204,9 @@ public class VisualPlanet {
       g2d.setColor(Color.MAGENTA);
       g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
           RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-      double x = (getWidth() / 2) + (FERENGINAR.getPositionX() / 10);
-      double y =  (getHeight() / 2) + (FERENGINAR.getPositionY() / 10);
-      ferenginar = new Ellipse2D.Double(x, y, 10, 10);
+      double x = (getWidth() / 2) + scale(FERENGINAR.getPositionX());
+      double y =  (getHeight() / 2) + scale(FERENGINAR.getPositionY());
+      ferenginar = new Ellipse2D.Double(x, y, PLANET_SIZE, PLANET_SIZE);
       g2d.fill(ferenginar);
     }
 
@@ -184,9 +215,9 @@ public class VisualPlanet {
       g2d.setColor(Color.PINK);
       g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
           RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-      double x = (getWidth() / 2) + (VULCANO.getPositionX() / 10);
-      double y =  (getHeight() / 2) + (VULCANO.getPositionY() / 10);
-      vulcano = new Ellipse2D.Double(x, y, 10, 10);
+      double x = (getWidth() / 2) + scale(VULCANO.getPositionX());
+      double y =  (getHeight() / 2) + scale(VULCANO.getPositionY());
+      vulcano = new Ellipse2D.Double(x, y, PLANET_SIZE, PLANET_SIZE);
       g2d.fill(vulcano);
     }
 
@@ -197,15 +228,9 @@ public class VisualPlanet {
           RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
       double x = (getWidth() / 2);
       double y =  (getHeight() / 2);
-      sun = new Ellipse2D.Double(x, y, 10, 10);
-      g2d.fill(sun);
+      orbit = new Ellipse2D.Double(x, y, PLANET_SIZE, PLANET_SIZE);
+      g2d.fill(orbit);
     }
 
-    private void drawDistanceBetweenPlanets(final Graphics g, Point a, Point b){
-      Graphics2D g2d = (Graphics2D) g.create();
-      g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-          RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-      g2d.draw(null);
-    }
   }
 }

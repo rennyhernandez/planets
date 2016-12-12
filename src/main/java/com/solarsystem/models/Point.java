@@ -43,7 +43,7 @@ public class Point implements Comparable<Point> {
   public double distance(final Point to){
     double dX = x - to.x;
     double dY = y - to.y;
-    return dX * dX + dY * dY;
+    return Math.sqrt(dX * dX + dY * dY);
   }
 
   public int compareTo(final Point p1) {

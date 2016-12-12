@@ -3,7 +3,7 @@ package com.solarsystem.models;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static com.solarsystem.models.Planet.FERENGINAR;
+import static com.solarsystem.models.Planet.*;
 
 
 /**
@@ -47,23 +47,73 @@ public class PlanetServiceTest {
     Assert.assertEquals(xAtDayOne, FERENGINAR.getPositionX(), 1);
     Assert.assertEquals(yAtDayOne, FERENGINAR.getPositionY(), 1);
   }
+  @Test
+  public void areAlignedBruteForced(){
+    // Given a Planet with position 45 degrees
+    FERENGINAR.setPositionForAngle(45);
+    VULCANO.setPositionForAngle(45);
+    BETAZED.setPositionForAngle(225);
+    // When asking if planets are aligned Then it should return true;
+    Assert.assertEquals(true, service.areAligned());
+
+  }
 
   @Test
-  public void areThePlanetsAligned() {
+  public void areAlignedInDay(){
+    int day = 308;
+    service.movePlanetsToDay(308);
+    double area = service.getArea();
+    System.out.println(area);
+  }
+  @Test
+  public void areAligned(){
+    //Given a day where planets are aligned with the sun
     int day = 1;
-    while(true){
+    int firstAlignment = findFirstAlignment(day);
+
+    System.out.println(firstAlignment);
+
+
+  }
+
+  private int findFirstAlignment(int day) {
+    while(day < Integer.MAX_VALUE){
       service.movePlanetsToDay(day);
-      if(service.areAligned()) {
-        System.out.printf("day %d\n", day);
-      }
+      if(!service.arePlanetsAlignedWithSun() && service.areAligned())
+        return day;
       day++;
     }
+    return -1;
+  }
+
+  @Test
+  public void areAlignedWithSunBruteForced(){
+    //Given three planets when planets are aligned with the sun on 45º, 45º and 225º
+    FERENGINAR.setPositionForAngle(45);
+    BETAZED.setPositionForAngle(45);
+    VULCANO.setPositionForAngle(225);
+    // Then the service must return true
+    Assert.assertEquals(true, service.arePlanetsAlignedWithSun());
   }
   @Test
   public void areAlignedWithSun(){
-    service.movePlanetsToDay(99);
-    service.areAlignedWithSun();
+    //Given a day where planets are aligned with the sun
+    int day = 1;
+    int firstAlignment = findFirstAlignmentWithSun(day);
+    //when forecasting day 1351
+    Weather forecast = service.forecast(firstAlignment);
+    //then forecast must be equals to DROUGHT
+    Assert.assertEquals(Weather.DROUGHT, forecast);
+  }
 
+  private int findFirstAlignmentWithSun(int day) {
+    while(day < 3650){
+      service.movePlanetsToDay(day);
+      if(service.arePlanetsAlignedWithSun())
+        return day;
+      day++;
+    }
+    return -1;
   }
 
 }

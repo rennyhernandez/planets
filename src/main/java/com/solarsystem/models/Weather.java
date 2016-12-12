@@ -5,8 +5,8 @@ package com.solarsystem.models;
  */
 public enum Weather {
   DROUGHT,
-  FULL_DROUGHT,
+  FULL_RAIN,
   RAIN,
   OPTIMAL,
-  OTHER;
+  NORMAL
 }
