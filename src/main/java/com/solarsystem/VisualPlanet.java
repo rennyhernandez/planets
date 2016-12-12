@@ -1,7 +1,8 @@
-package com.solarsystem.utils;
+package com.solarsystem;
 
 import com.solarsystem.models.Planet;
 import com.solarsystem.models.PlanetService;
+import com.solarsystem.utils.MathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +71,8 @@ public class VisualPlanet {
       logger.info("Angle for Betazed: {}º", BETAZED.getAngle());
       logger.info("The weather for this day is: {}", service.forecast(day).name());
       logger.info("Area is: {}", service.getArea());
-      logger.info("Minimal distance is: {}", service.getMinimalDistance(FERENGINAR.getPoint(), VULCANO.getPoint(), BETAZED.getPoint()));
+      logger.info("Minimal distance is: {}", MathUtils.getMinimalDistance(FERENGINAR.getPoint(), VULCANO.getPoint(),
+          BETAZED.getPoint()));
       logger.info("---- End of day {} ----\n", day);
     }
 

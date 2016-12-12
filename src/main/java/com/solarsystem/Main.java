@@ -18,28 +18,10 @@ public class Main {
 
   public static void main(String[] args) {
     Map<Weather, Integer> daysByWeather = new HashMap<>();
-    int maxRain = -1;
-    double maxPerimeter = Double.MIN_VALUE;
-    for(int day = 1; day <= DAYS_IN_A_YEAR * YEARS; day++){
-      Weather weather = service.forecast(day);
-      if(service.sunInTriangle()){
-        double perimeter = service.getPerimeter();
-        if(perimeter >= maxPerimeter) {
-          maxPerimeter = perimeter;
-          maxRain = day;
-        }
-      }
-      if(daysByWeather.containsKey(weather)) {
-        daysByWeather.put(weather, daysByWeather.get(weather) + 1);
-      } else {
-        daysByWeather.put(weather, 1);
-      }
-    }
-
-    System.out.printf("FOR 10 YEARS OF %d DAYS THE FORECAST IS:\n", DAYS_IN_A_YEAR);
+    System.out.printf("FOR %d YEARS OF %d DAYS THE FORECAST IS:\n", YEARS, DAYS_IN_A_YEAR);
     System.out.printf("%d DAYS OF DROUGHT\n", daysByWeather.get(Weather.DROUGHT));
     System.out.printf("%d DAYS OF RAIN\n", daysByWeather.get(Weather.RAIN));
-    System.out.printf("FULL RAIN IN DAY %d\n", maxRain);
+    System.out.printf("FULL RAIN IN DAY %d\n", daysByWeather.get(Weather.FULL_RAIN));
     System.out.printf("%d DAYS OF OPTIMAL CONDITIONS\n", daysByWeather.get(Weather.OPTIMAL));
   }
 }

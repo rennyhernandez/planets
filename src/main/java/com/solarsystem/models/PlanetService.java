@@ -4,6 +4,9 @@ package com.solarsystem.models;
 import com.solarsystem.utils.MathUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.solarsystem.models.Planet.*;
 
 /**
@@ -18,6 +21,8 @@ public class PlanetService {
   * every run when the planet are near to be collinear
   */
   public static final double EPSILON = 9e+4;
+  private static final int DAYS_IN_A_YEAR = 365;
+  private static final int YEARS = 10;
 
   public double getArea() {
     return getArea(FERENGINAR.getPoint(), VULCANO.getPoint(), BETAZED.getPoint());
@@ -116,22 +121,42 @@ public class PlanetService {
     return Weather.NORMAL;
   }
 
-  public double getMinimalDistance(final Point p1, final Point p2, final Point p3){
-    double p1p2 = p1.distance(p2);
-    double p1p3 = p1.distance(p3);
-    double p2p3 = p2.distance(p3);
-    return Math.min(Math.min(p1p2,p1p3),p2p3);
+  /**
+   * Forecasts ten years of weather.
+   * It is assumed that a year has 365 days
+   *
+   * @return a Map<Weather, Integer> containing the weather and the
+   * sum of days associated. The weather FULL_RAIN contains the day
+   * with most predicted rain. It is never null
+   *
+   */
+
+  public Map<Weather, Integer> forecastForYears(){
+    Map<Weather, Integer> daysByWeather = new HashMap<>();
+    int maxRain = -1;
+    double maxPerimeter = Double.MIN_VALUE;
+    for(int day = 1; day <= DAYS_IN_A_YEAR * YEARS; day++){
+      Weather weather = forecast(day);
+      if(sunInTriangle()){
+        double perimeter = getPerimeter();
+        if(perimeter >= maxPerimeter) {
+          maxPerimeter = perimeter;
+          maxRain = day;
+        }
+      }
+      if(daysByWeather.containsKey(weather)) {
+        daysByWeather.put(weather, daysByWeather.get(weather) + 1);
+      } else {
+        daysByWeather.put(weather, 1);
+      }
+    }
+    daysByWeather.put(Weather.FULL_RAIN, maxRain);
+    return daysByWeather;
+  }
+  public double getPerimeter(){
+    return MathUtils.getPerimeter(FERENGINAR.getPoint(), VULCANO.getPoint(), BETAZED.getPoint());
   }
 
-  public double getPerimeter(){
-    return getPerimeter(FERENGINAR.getPoint(), VULCANO.getPoint(), BETAZED.getPoint());
-  }
-  public double getPerimeter(Point p1, Point p2, Point p3){
-    double p1p2 = p1.distance(p2);
-    double p1p3 = p1.distance(p3);
-    double p2p3 = p2.distance(p3);
-    return p1p2 + p1p3 + p2p3;
-  }
 }
 
 
